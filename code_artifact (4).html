@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>六大句型偵探王 - 高年級國語線上闖關遊戲</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        detective: {
+                            100: '#eef2ff',
+                            500: '#4f46e5',
+                            700: '#3730a3',
+                            900: '#1e1b4b',
+                        },
+                        amberGold: '#f59e0b',
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .badge-glow {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 4px;
+        }
+        @keyframes diceRotate {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .animate-dice {
+            animation: diceRotate 0.6s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen p-2 sm:p-4 md:p-6 custom-scrollbar">
+
+    <!-- Top Header -->
+    <header class="w-full max-w-6xl mx-auto glass-card rounded-2xl p-4 mb-4 flex flex-wrap items-center justify-between gap-4 shadow-2xl">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-2xl text-yellow-300 shadow-lg border border-indigo-400">
+                🕵️
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-indigo-300">
+                    六大句型偵探王
+                </h1>
+                <p class="text-xs text-slate-300">國小高年級句型線上互動闖關</p>
+            </div>
+        </div>
+
+        <!-- Player Stats & Controls -->
+        <div class="flex items-center gap-3 sm:gap-6 flex-wrap">
+            <div class="bg-slate-900/80 px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-2">
+                <i class="fa-solid fa-trophy text-yellow-400 text-lg"></i>
+                <span class="text-xs text-slate-400">偵探積分：</span>
+                <span id="player-score" class="text-xl font-bold text-yellow-300">0</span>
+            </div>
+
+            <!-- Cheat Sheet Toggle Button -->
+            <button onclick="toggleCheatSheet()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all shadow-md active:scale-95">
+                <i class="fa-solid fa-book-bookmark text-amber-300"></i>
+                <span>句型小抄</span>
+            </button>
+
+            <!-- API Key Settings Button -->
+            <button onclick="toggleApiKeyModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl text-xs font-medium border border-slate-600 flex items-center gap-1">
+                <i class="fa-solid fa-key text-yellow-400"></i>
+                <span id="api-status-text">AI 設定</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Badges Progress Bar -->
+    <div class="w-full max-w-6xl mx-auto glass-card rounded-2xl p-3 mb-6">
+        <div class="flex items-center justify-between mb-2 px-2">
+            <span class="text-xs font-bold text-indigo-300 uppercase tracking-wider">
+                <i class="fa-solid fa-award text-yellow-400 mr-1"></i> 句型大師印章收集進度 (<span id="badge-count">0</span>/6)
+            </span>
+            <span id="rank-title" class="text-xs font-bold text-yellow-400 bg-yellow-400/10 px-2.5 py-1 rounded-full border border-yellow-400/30">
+                見習偵探
+            </span>
+        </div>
+        <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
+            <div id="badge-承接" class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-2 text-center transition-all opacity-40">
+                <div class="text-xl">🔵</div>
+                <div class="text-xs font-bold text-slate-300 mt-1">承接章</div>
+            </div>
+            <div id="badge-假設" class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-2 text-center transition-all opacity-40">
+                <div class="text-xl">🟡</div>
+                <div class="text-xs font-bold text-slate-300 mt-1">假設章</div>
+            </div>
+            <div id="badge-並列" class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-2 text-center transition-all opacity-40">
+                <div class="text-xl">🟢</div>
+                <div class="text-xs font-bold text-slate-300 mt-1">並列章</div>
+            </div>
+            <div id="badge-條件" class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-2 text-center transition-all opacity-40">
+                <div class="text-xl">🔴</div>
+                <div class="text-xs font-bold text-slate-300 mt-1">條件章</div>
+            </div>
+            <div id="badge-遞進" class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-2 text-center transition-all opacity-40">
+                <div class="text-xl">🟣</div>
+                <div class="text-xs font-bold text-slate-300 mt-1">遞進章</div>
+            </div>
+            <div id="badge-轉折" class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-2 text-center transition-all opacity-40">
+                <div class="text-xl">🟠</div>
+                <div class="text-xs font-bold text-slate-300 mt-1">轉折章</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="w-full max-w-6xl mx-auto flex-1 flex flex-col gap-6">
+
+        <!-- Stage Navigation Tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+            <button onclick="switchLevel(1)" id="tab-1" class="stage-tab active-tab bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all">
+                <span>🔎 第一關</span> <span class="hidden sm:inline">我是誰</span>
+            </button>
+            <button onclick="switchLevel(2)" id="tab-2" class="stage-tab bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all">
+                <span>🃏 第二關</span> <span class="hidden sm:inline">關聯詞大亂鬥</span>
+            </button>
+            <button onclick="switchLevel(3)" id="tab-3" class="stage-tab bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all">
+                <span>🚨 第三關</span> <span class="hidden sm:inline">句型警察</span>
+            </button>
+            <button onclick="switchLevel(4)" id="tab-4" class="stage-tab bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all">
+                <span>🎲 第四關</span> <span class="hidden sm:inline">句型骰子</span>
+            </button>
+            <button onclick="switchLevel(5)" id="tab-5" class="stage-tab bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all">
+                <span>💥 第五關</span> <span class="hidden sm:inline">一句變身</span>
+            </button>
+            <button onclick="switchLevel(6)" id="tab-6" class="stage-tab bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all">
+                <span>🏆 終極關卡</span> <span class="hidden sm:inline">搶救王</span>
+            </button>
+        </div>
+
+        <!-- Stage Container -->
+        <div id="stage-viewport" class="glass-card rounded-2xl p-4 sm:p-6 md:p-8 flex-1 min-h-[480px]">
+            <!-- Dynamic Content Injected via JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- Modal: Cheat Sheet (句型小抄) -->
+    <div id="cheat-sheet-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-card bg-slate-900 border-indigo-500/40 w-full max-w-3xl max-h-[85vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-indigo-950/40">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-yellow-400 text-xl"></i>
+                    <h2 class="text-xl font-bold text-white">六大句型偵探密技小抄</h2>
+                </div>
+                <button onclick="toggleCheatSheet()" class="text-slate-400 hover:text-white text-2xl leading-none">
+                    &times;
+                </button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+
+                    <div class="bg-slate-800/80 rounded-xl p-4 border-l-4 border-blue-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-blue-300 text-base">🔵 承接複句</span>
+                            <span class="text-xs bg-blue-950 text-blue-200 px-2 py-0.5 rounded">順序</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-2">由兩個以上分句組成，內容有事情先後的順序。</p>
+                        <div class="text-xs text-amber-300 font-mono mb-1">關鍵關聯詞：先……再……、最後……、一……就……、接著……</div>
+                        <div class="text-xs text-slate-400 italic">例：小明先完成作業，再出去打球。</div>
+                    </div>
+
+                    <div class="bg-slate-800/80 rounded-xl p-4 border-l-4 border-yellow-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-yellow-300 text-base">🟡 假設複句</span>
+                            <span class="text-xs bg-yellow-950 text-yellow-200 px-2 py-0.5 rounded">假定</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-2">前一句提出假設，後一句說明在假設下會發生的結果。</p>
+                        <div class="text-xs text-amber-300 font-mono mb-1">關鍵關聯詞：如果……就……、若是……也……、即使……也……</div>
+                        <div class="text-xs text-slate-400 italic">例：如果明天下雨，我們就不能到操場活動。</div>
+                    </div>
+
+                    <div class="bg-slate-800/80 rounded-xl p-4 border-l-4 border-emerald-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-emerald-300 text-base">🟢 並列複句</span>
+                            <span class="text-xs bg-emerald-950 text-emerald-200 px-2 py-0.5 rounded">同時</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-2">用不同分句分別描寫同時存在的幾種情況。</p>
+                        <div class="text-xs text-amber-300 font-mono mb-1">關鍵關聯詞：也……、一方面……另一方面……、有時……有時……</div>
+                        <div class="text-xs text-slate-400 italic">例：妹妹喜歡畫畫，也喜歡唱歌。</div>
+                    </div>
+
+                    <div class="bg-slate-800/80 rounded-xl p-4 border-l-4 border-red-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-red-300 text-base">🔴 條件複句</span>
+                            <span class="text-xs bg-red-950 text-red-200 px-2 py-0.5 rounded">要件</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-2">前一句提出必要的條件，後一句說明會產生的結果。</p>
+                        <div class="text-xs text-amber-300 font-mono mb-1">關鍵關聯詞：只要……就……、不管……都……、不論……都……</div>
+                        <div class="text-xs text-slate-400 italic">例：只要認真練習，就能慢慢進步。</div>
+                    </div>
+
+                    <div class="bg-slate-800/80 rounded-xl p-4 border-l-4 border-purple-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-purple-300 text-base">🟣 遞進複句</span>
+                            <span class="text-xs bg-purple-950 text-purple-200 px-2 py-0.5 rounded">層層加深</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-2">後句比前句在範圍、程度上有更進一步的增加。</p>
+                        <div class="text-xs text-amber-300 font-mono mb-1">關鍵關聯詞：不但……而且……、不只……更……、甚至……</div>
+                        <div class="text-xs text-slate-400 italic">例：他不但會唱歌，而且會跳舞。</div>
+                    </div>
+
+                    <div class="bg-slate-800/80 rounded-xl p-4 border-l-4 border-orange-500">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-orange-300 text-base">🟠 轉折複句</span>
+                            <span class="text-xs bg-orange-950 text-orange-200 px-2 py-0.5 rounded">轉彎</span>
+                        </div>
+                        <p class="text-slate-300 text-xs mb-2">後句意思與前句相反或相對，產生預期的轉折變化。</p>
+                        <div class="text-xs text-amber-300 font-mono mb-1">關鍵關聯詞：雖然……但是……、卻……、居然……</div>
+                        <div class="text-xs text-slate-400 italic">例：雖然今天下雨，但是我們還是準時到校。</div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-800 bg-slate-950 text-center">
+                <button onclick="toggleCheatSheet()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2 rounded-xl transition-all">
+                    收到！關閉密技小抄
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gemini API Key Setup -->
+    <div id="api-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
+        <div class="glass-card bg-slate-900 border-yellow-500/40 w-full max-w-md rounded-2xl p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-robot text-yellow-400"></i> Gemini AI 批改與造句助理
+            </h3>
+            <p class="text-xs text-slate-300 mb-4">
+                本遊戲第四關與第六關包含自由造句能力！設定 Google Gemini API Key 可啟動高年級國語大師 AI 助理進行智慧點評（未輸入亦可使用內建對照批改系統）。
+            </p>
+            <input type="password" id="api-key-input" placeholder="請貼上你的 Gemini API Key" 
+                class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 mb-4">
+            <div class="flex justify-end gap-2">
+                <button onclick="toggleApiKeyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">
+                    取消
+                </button>
+                <button onclick="saveApiKey()" class="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-bold text-xs rounded-xl shadow-md">
+                    儲存設定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Message Box -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-2xl transition-all transform translate-y-20 opacity-0 pointer-events-none z-50 flex items-center gap-3">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-yellow-300 text-xl"></i>
+        <span id="toast-message" class="text-sm font-semibold">提示訊息</span>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            score: 0,
+            badges: {
+                承接: false,
+                假設: false,
+                並列: false,
+                條件: false,
+                遞進: false,
+                轉折: false
+            },
+            currentLevel: 1,
+            apiKey: localStorage.getItem('gemini_api_key') || ''
+        };
+
+        // Standard Sentence Patterns Database
+        const PATTERN_TYPES = ['承接', '假設', '並列', '條件', '遞進', '轉折'];
+
+        // Sound System via Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    osc.frequency.setValueAtTime(164.81, audioCtx.currentTime + 0.15); // E3
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'dice') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    osc.start(audioCtx.currentTime);
+                    osc.stop(audioCtx.currentTime + 0.1);
+                }
+            } catch(e) {
+                console.log('Audio playback prevented or unsupported');
+            }
+        }
+
+        function showToast(msg, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-message');
+
+            text.textContent = msg;
+            icon.className = isSuccess 
+                ? "fa-solid fa-circle-check text-yellow-300 text-xl" 
+                : "fa-solid fa-triangle-exclamation text-red-300 text-xl";
+            
+            toast.className = isSuccess
+                ? "fixed bottom-6 right-6 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl transition-all transform translate-y-0 opacity-100 pointer-events-auto z-50 flex items-center gap-3"
+                : "fixed bottom-6 right-6 bg-rose-600 text-white px-5 py-3 rounded-xl shadow-2xl transition-all transform translate-y-0 opacity-100 pointer-events-auto z-50 flex items-center gap-3";
+
+            setTimeout(() => {
+                toast.className = "fixed bottom-6 right-6 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-2xl transition-all transform translate-y-20 opacity-0 pointer-events-none z-50 flex items-center gap-3";
+            }, 3000);
+        }
+
+        function addScore(points) {
+            gameState.score += points;
+            document.getElementById('player-score').textContent = gameState.score;
+        }
+
+        function unlockBadge(type) {
+            if (!gameState.badges[type]) {
+                gameState.badges[type] = true;
+                const badgeEl = document.getElementById(`badge-${type}`);
+                if (badgeEl) {
+                    badgeEl.classList.remove('opacity-40');
+                    badgeEl.classList.add('badge-glow', 'border-yellow-400', 'bg-slate-800');
+                }
+                updateBadgeCount();
+                showToast(`🎉 恭喜收集到【${type}複句】偵探印章！`, true);
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+            }
+        }
+
+        function updateBadgeCount() {
+            const count = Object.values(gameState.badges).filter(Boolean).length;
+            document.getElementById('badge-count').textContent = count;
+
+            const rankEl = document.getElementById('rank-title');
+            if (count === 6) {
+                rankEl.textContent = '🏆 六大句型大師偵探';
+                rankEl.className = "text-xs font-bold text-yellow-300 bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-400 animate-pulse";
+            } else if (count >= 4) {
+                rankEl.textContent = '🕵️ 高級偵探';
+            } else if (count >= 2) {
+                rankEl.textContent = '🔎 中級偵探';
+            }
+        }
+
+        function toggleCheatSheet() {
+            const modal = document.getElementById('cheat-sheet-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleApiKeyModal() {
+            const modal = document.getElementById('api-modal');
+            modal.classList.toggle('hidden');
+            if (gameState.apiKey) {
+                document.getElementById('api-key-input').value = gameState.apiKey;
+            }
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('api-key-input').value.trim();
+            gameState.apiKey = val;
+            localStorage.setItem('gemini_api_key', val);
+            toggleApiKeyModal();
+            updateApiStatus();
+            showToast(val ? 'AI 助理已啟動！' : '已關閉 AI 助理');
+        }
+
+        function updateApiStatus() {
+            const el = document.getElementById('api-status-text');
+            if (gameState.apiKey) {
+                el.textContent = 'AI 已連線';
+                el.classList.add('text-emerald-400');
+            } else {
+                el.textContent = 'AI 設定';
+                el.classList.remove('text-emerald-400');
+            }
+        }
+
+        // ================= LEVEL 1: 「我是誰？」句型辨識 =================
+        const level1Data = [
+            {
+                sentence: "小明先完成作業，再出去打球。",
+                type: "承接",
+                connectors: ["先", "再"],
+                options: ["先……再……", "如果……就……", "不但……而且……", "雖然……但是……"]
+            },
+            {
+                sentence: "如果明天下雨，就不能到操場活動。",
+                type: "假設",
+                connectors: ["如果", "就"],
+                options: ["只要……就……", "如果……就……", "一方面……另一方面……", "不是……而是……"]
+            },
+            {
+                sentence: "妹妹喜歡畫畫，也喜歡唱歌。",
+                type: "並列",
+                connectors: ["也"],
+                options: ["先……再……", "也", "雖然……但是……", "不僅……更……"]
+            },
+            {
+                sentence: "只要認真練習，就能慢慢進步。",
+                type: "條件",
+                connectors: ["只要", "就"],
+                options: ["只要……就……", "因為……所以……", "即使……也……", "不但……而且……"]
+            },
+            {
+                sentence: "他不但會唱歌，而且會跳舞。",
+                type: "遞進",
+                connectors: ["不但", "而且"],
+                options: ["除了……也……", "即使……也……", "不但……而且……", "先……再……"]
+            },
+            {
+                sentence: "雖然今天下雨，但是我們還是準時到校。",
+                type: "轉折",
+                connectors: ["雖然", "但是"],
+                options: ["雖然……但是……", "無論……都……", "一方面……另一方面……", "如果……就……"]
+            }
+        ];
+
+        let l1Index = 0;
+
+        function renderLevel1() {
+            const item = level1Data[l1Index];
+            const html = `
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div class="text-center">
+                        <span class="bg-indigo-900/60 text-indigo-300 text-xs font-bold px-3 py-1 rounded-full border border-indigo-700/50">
+                            題目 ${l1Index + 1} / ${level1Data.length}
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-2">🔎 第一關：我是誰？句型辨識</h2>
+                        <p class="text-xs text-slate-300 mt-1">請看題目句子，判斷屬於哪一種複句並找出正確的關鍵關聯詞！</p>
+                    </div>
+
+                    <!-- Sentence Card -->
+                    <div class="bg-slate-800/90 rounded-2xl p-6 border-2 border-indigo-500/30 text-center shadow-xl">
+                        <div class="text-slate-400 text-xs mb-2">偵探案情題目：</div>
+                        <div class="text-xl sm:text-2xl font-bold text-yellow-300 tracking-wide mb-2">
+                            「${item.sentence}」
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Select Type -->
+                    <div id="l1-step1" class="space-y-3">
+                        <label class="block text-sm font-bold text-indigo-200">步驟一：這是哪一種複句？</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            ${PATTERN_TYPES.map(t => `
+                                <button onclick="checkL1Type('${t}')" class="bg-slate-800 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-xl border border-slate-700 transition-all active:scale-95 text-sm">
+                                    ${t}複句
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Select Connector (Hidden initially) -->
+                    <div id="l1-step2" class="space-y-3 hidden">
+                        <label class="block text-sm font-bold text-emerald-300">步驟二：句中的關聯詞是哪一組？</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            ${item.options.map(opt => `
+                                <button onclick="checkL1Connector('${opt}')" class="bg-slate-800 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl border border-slate-700 transition-all text-sm">
+                                    ${opt}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div id="l1-feedback" class="text-center font-bold min-h-[30px]"></div>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function checkL1Type(selectedType) {
+            const item = level1Data[l1Index];
+            const feedback = document.getElementById('l1-feedback');
+
+            if (selectedType === item.type) {
+                playSound('correct');
+                addScore(10);
+                unlockBadge(item.type);
+                feedback.className = "text-emerald-400 text-sm font-bold animate-bounce";
+                feedback.textContent = `🎯 正確！這是【${item.type}複句】！請接著找出關聯詞。`;
+                document.getElementById('l1-step1').classList.add('pointer-events-none', 'opacity-50');
+                document.getElementById('l1-step2').classList.remove('hidden');
+            } else {
+                playSound('wrong');
+                feedback.className = "text-rose-400 text-sm font-bold";
+                feedback.textContent = `❌ 再想想看！這句話前後表達的是什麼關係呢？`;
+            }
+        }
+
+        function checkL1Connector(selectedOpt) {
+            const item = level1Data[l1Index];
+            const expected = item.connectors.join('……');
+            const feedback = document.getElementById('l1-feedback');
+
+            if (selectedOpt.includes(item.connectors[0])) {
+                playSound('correct');
+                addScore(5);
+                feedback.className = "text-yellow-300 text-base font-bold";
+                feedback.textContent = `🎉 太棒了！關聯詞確實是「${selectedOpt}」！`;
+
+                setTimeout(() => {
+                    l1Index = (l1Index + 1) % level1Data.length;
+                    renderLevel1();
+                }, 1500);
+            } else {
+                playSound('wrong');
+                feedback.className = "text-rose-400 text-sm font-bold";
+                feedback.textContent = `❌ 關聯詞不對喔，請再觀察句子中的關鍵連接詞！`;
+            }
+        }
+
+        // ================= LEVEL 2: 🃏「關聯詞大亂鬥」卡片配對 =================
+        const level2Cards = [
+            { id: 1, front: "如果明天下雨", back: "就留在教室活動", type: "假設" },
+            { id: 2, front: "雖然今天很累", back: "但是他還是完成了工作", type: "轉折" },
+            { id: 3, front: "他不但會唱歌", back: "而且會跳舞", type: "遞進" },
+            { id: 4, front: "小明先完成作業", back: "再出去打球", type: "承接" },
+            { id: 5, front: "妹妹喜歡畫畫", back: "也喜歡跳舞", type: "並列" },
+            { id: 6, front: "只要認真練習", back: "就能慢慢進步", type: "條件" }
+        ];
+
+        let selectedFront = null;
+        let selectedBack = null;
+        let l2Matches = 0;
+
+        function renderLevel2() {
+            selectedFront = null;
+            selectedBack = null;
+            l2Matches = 0;
+
+            const fronts = [...level2Cards].sort(() => Math.random() - 0.5);
+            const backs = [...level2Cards].sort(() => Math.random() - 0.5);
+
+            const html = `
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="text-center">
+                        <h2 class="text-xl sm:text-2xl font-black text-white">🃏 第二關：關聯詞大亂鬥</h2>
+                        <p class="text-xs text-slate-300 mt-1">點擊左側「前半句」，再點擊右側配對的「後半句」，組成完整的句型！</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Front Sentences -->
+                        <div class="space-y-3">
+                            <h3 class="text-sm font-bold text-indigo-300 flex items-center gap-2">
+                                <span>🃏 A 牌：前半句</span>
+                            </h3>
+                            <div class="space-y-2">
+                                ${fronts.map(card => `
+                                    <button id="front-${card.id}" onclick="selectL2Front(${card.id})" 
+                                        class="w-full text-left bg-slate-800 hover:bg-slate-700 border border-indigo-500/30 rounded-xl p-3 text-sm text-slate-200 transition-all">
+                                        🔹 ${card.front}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Back Sentences -->
+                        <div class="space-y-3">
+                            <h3 class="text-sm font-bold text-emerald-300 flex items-center gap-2">
+                                <span>🃏 B 牌：後半句</span>
+                            </h3>
+                            <div class="space-y-2">
+                                ${backs.map(card => `
+                                    <button id="back-${card.id}" onclick="selectL2Back(${card.id})" 
+                                        class="w-full text-left bg-slate-800 hover:bg-slate-700 border border-emerald-500/30 rounded-xl p-3 text-sm text-slate-200 transition-all">
+                                        🔸 ${card.back}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="l2-modal" class="hidden bg-slate-900 border border-yellow-500/50 p-4 rounded-xl text-center space-y-3">
+                        <p class="text-yellow-300 font-bold text-base" id="l2-combined-text"></p>
+                        <p class="text-xs text-slate-300">配對成功！請問這組合屬於什麼複句？</p>
+                        <div class="flex flex-wrap justify-center gap-2">
+                            ${PATTERN_TYPES.map(t => `
+                                <button onclick="answerL2Type('${t}')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs">
+                                    ${t}複句
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function selectL2Front(id) {
+            if (selectedFront) {
+                document.getElementById(`front-${selectedFront.id}`).classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-950');
+            }
+            selectedFront = level2Cards.find(c => c.id === id);
+            document.getElementById(`front-${id}`).classList.add('ring-2', 'ring-indigo-400', 'bg-indigo-950');
+            checkL2Pair();
+        }
+
+        function selectL2Back(id) {
+            if (selectedBack) {
+                document.getElementById(`back-${selectedBack.id}`).classList.remove('ring-2', 'ring-emerald-400', 'bg-emerald-950');
+            }
+            selectedBack = level2Cards.find(c => c.id === id);
+            document.getElementById(`back-${id}`).classList.add('ring-2', 'ring-emerald-400', 'bg-emerald-950');
+            checkL2Pair();
+        }
+
+        function checkL2Pair() {
+            if (selectedFront && selectedBack) {
+                if (selectedFront.id === selectedBack.id) {
+                    playSound('correct');
+                    document.getElementById('l2-modal').classList.remove('hidden');
+                    document.getElementById('l2-combined-text').textContent = `「${selectedFront.front}，${selectedBack.back}。」`;
+                } else {
+                    playSound('wrong');
+                    showToast('❌ 這兩句語意不太通順喔！請重試配對。', false);
+                    setTimeout(() => {
+                        document.getElementById(`front-${selectedFront.id}`).classList.remove('ring-2', 'ring-indigo-400', 'bg-indigo-950');
+                        document.getElementById(`back-${selectedBack.id}`).classList.remove('ring-2', 'ring-emerald-400', 'bg-emerald-950');
+                        selectedFront = null;
+                        selectedBack = null;
+                    }, 800);
+                }
+            }
+        }
+
+        function answerL2Type(type) {
+            if (type === selectedFront.type) {
+                playSound('correct');
+                addScore(20);
+                unlockBadge(type);
+                showToast(`🎯 完全正確！獎勵 +20 分！`);
+
+                document.getElementById(`front-${selectedFront.id}`).style.visibility = 'hidden';
+                document.getElementById(`back-${selectedBack.id}`).style.visibility = 'hidden';
+                document.getElementById('l2-modal').classList.add('hidden');
+
+                selectedFront = null;
+                selectedBack = null;
+                l2Matches++;
+
+                if (l2Matches === level2Cards.length) {
+                    setTimeout(() => {
+                        showToast('🏆 太厲害了！第二關卡片大亂鬥全員通關！');
+                        renderLevel2();
+                    }, 1000);
+                }
+            } else {
+                playSound('wrong');
+                showToast(`❌ 答錯囉，這句不是【${type}複句】，再試試！`, false);
+            }
+        }
+
+        // ================= LEVEL 3: 🚨「句型警察」捉錯改寫 =================
+        const level3Data = [
+            {
+                wrong: "雖然今天下雨，所以我們沒有出去打球。",
+                errorPos: "雖然……所以……",
+                reason: "「雖然」表示轉折關係，不能與表示因果的「所以」搭配。",
+                correctOptions: [
+                    "雖然今天下雨，但是我們還是出去打球。",
+                    "因為今天下雨，所以我們沒有出去打球。"
+                ],
+                correctAnswerIndex: 0,
+                type: "轉折"
+            },
+            {
+                wrong: "如果明天放假，但是我要去上課。",
+                errorPos: "如果……但是……",
+                reason: "「如果」表示假設條件，與表示轉折的「但是」衝突。",
+                correctOptions: [
+                    "如果明天放假，我就可以好好休息。",
+                    "雖然明天放假，但是我要去上課。"
+                ],
+                correctAnswerIndex: 0,
+                type: "假設"
+            },
+            {
+                wrong: "他不但會唱歌，但是也很喜歡打籃球。",
+                errorPos: "不但……但是……",
+                reason: "「不但」應搭配表示遞進的「而且/也」，不能與轉折詞「但是」連用。",
+                correctOptions: [
+                    "他不但會唱歌，而且也很會打籃球。",
+                    "他雖然會唱歌，但是更喜歡打籃球。"
+                ],
+                correctAnswerIndex: 0,
+                type: "遞进"
+            }
+        ];
+
+        let l3Index = 0;
+
+        function renderLevel3() {
+            const item = level3Data[l3Index];
+            const html = `
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div class="text-center">
+                        <span class="bg-red-900/60 text-red-300 text-xs font-bold px-3 py-1 rounded-full border border-red-700/50">
+                            🚨 案件 0${l3Index + 1}
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-2">🚨 第三關：句型警察捉錯大隊</h2>
+                        <p class="text-xs text-slate-300 mt-1">抓出關聯詞搭配不恰當的「可疑句子」，並將它修正為正確的複句！</p>
+                    </div>
+
+                    <!-- Faulty Sentence Card -->
+                    <div class="bg-red-950/40 rounded-2xl p-6 border-2 border-red-500/40 text-center shadow-xl space-y-2">
+                        <div class="text-red-400 font-bold text-xs uppercase tracking-wider">⚠️ 發現有瑕疵的病句：</div>
+                        <div class="text-xl sm:text-2xl font-bold text-white tracking-wide">
+                            ❌ 「${item.wrong}」
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Identify error -->
+                    <div id="l3-step1" class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <label class="block text-sm font-bold text-yellow-300">警察報告 1：這句話哪裡的關聯詞搭配錯誤？</label>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="checkL3Error('${item.errorPos}')" class="bg-slate-700 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all">
+                                🚨 關聯詞搭配不當：「${item.errorPos}」
+                            </button>
+                            <button onclick="checkL3Error('正常')" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-xl text-sm transition-all">
+                                沒發現錯誤
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Select Correction (Hidden) -->
+                    <div id="l3-step2" class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 space-y-3 hidden">
+                        <label class="block text-sm font-bold text-emerald-300">警察報告 2：原因解析與最佳改寫方案：</label>
+                        <p class="text-xs text-slate-300 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            💡 <span class="text-yellow-300 font-bold">偵探解析：</span>${item.reason}
+                        </p>
+                        <div class="space-y-2">
+                            ${item.correctOptions.map((opt, idx) => `
+                                <button onclick="checkL3Rewrite(${idx})" class="w-full text-left bg-slate-900 hover:bg-emerald-600/30 border border-slate-700 hover:border-emerald-500 rounded-xl p-3 text-sm text-emerald-200 transition-all font-semibold">
+                                    ✅ 改寫方案 ${idx + 1}：「${opt}」
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div id="l3-feedback" class="text-center font-bold min-h-[24px]"></div>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function checkL3Error(pos) {
+            const item = level3Data[l3Index];
+            if (pos === item.errorPos) {
+                playSound('correct');
+                addScore(15);
+                document.getElementById('l3-step1').classList.add('opacity-50', 'pointer-events-none');
+                document.getElementById('l3-step2').classList.remove('hidden');
+                document.getElementById('l3-feedback').textContent = "🚨 成功逮捕病句！請選擇最通順的改寫句。";
+                document.getElementById('l3-feedback').className = "text-emerald-400 text-sm font-bold";
+            } else {
+                playSound('wrong');
+                document.getElementById('l3-feedback').textContent = "❌ 句中有明顯搭配不當的關聯詞喔！再仔細看一看！";
+                document.getElementById('l3-feedback').className = "text-rose-400 text-sm font-bold";
+            }
+        }
+
+        function checkL3Rewrite(idx) {
+            playSound('correct');
+            addScore(15);
+            unlockBadge(level3Data[l3Index].type);
+            showToast('🏆 完美改寫！順利清除句型漏洞！');
+
+            setTimeout(() => {
+                l3Index = (l3Index + 1) % level3Data.length;
+                renderLevel3();
+            }, 1200);
+        }
+
+        // ================= LEVEL 4: 🎲「句型骰子」即時造句 =================
+        const diceTopics = [
+            "學校運動會", "下雨天的樂趣", "圖書館閱讀", 
+            "幫忙做家事", "學習新技能", "與朋友合作"
+        ];
+
+        let currentDiceNum = null;
+        let currentDicePattern = null;
+        let currentTopic = null;
+
+        function renderLevel4() {
+            const html = `
+                <div class="max-w-2xl mx-auto space-y-6 text-center">
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-white">🎲 第四關：句型骰子造句考驗</h2>
+                        <p class="text-xs text-slate-300 mt-1">擲出骰子決定句型，針對隨機主題進行造句！</p>
+                    </div>
+
+                    <!-- Dice Interactive Container -->
+                    <div class="bg-slate-800/80 rounded-2xl p-6 border border-indigo-500/30 flex flex-col items-center justify-center space-y-4">
+                        <div id="dice-graphic" class="w-20 h-20 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-2xl flex items-center justify-center text-4xl shadow-xl text-slate-950 font-black cursor-pointer hover:scale-105 transition-transform" onclick="rollDice()">
+                            🎲
+                        </div>
+
+                        <button onclick="rollDice()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition-all active:scale-95">
+                            擲骰子！
+                        </button>
+
+                        <div id="dice-result" class="hidden space-y-2">
+                            <div class="text-sm text-slate-300">
+                                擲出點數 <span id="dice-point" class="text-yellow-300 font-bold text-lg"></span> 👉 指定句型：<span id="dice-pattern-name" class="text-indigo-300 font-black text-lg"></span>
+                            </div>
+                            <div class="text-xs bg-slate-900 px-3 py-1.5 rounded-lg text-amber-300 border border-slate-700">
+                                🎯 造句指定主題：「<span id="dice-topic-name" class="font-bold"></span>」
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sentence Input Area -->
+                    <div id="dice-input-area" class="hidden space-y-3 text-left">
+                        <label class="block text-sm font-bold text-slate-200">請輸入你的造句：</label>
+                        <textarea id="user-dice-sentence" rows="3" placeholder="請運用指定的句型關聯詞，結合主題寫出一句完整的句子……" 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-indigo-500"></textarea>
+
+                        <button onclick="submitDiceSentence()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
+                            提交造句進行審核 ✨
+                        </button>
+                    </div>
+
+                    <div id="dice-feedback" class="text-center font-bold text-sm min-h-[30px]"></div>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function rollDice() {
+            playSound('dice');
+            const graphic = document.getElementById('dice-graphic');
+            graphic.classList.add('animate-dice');
+
+            setTimeout(() => {
+                graphic.classList.remove('animate-dice');
+                currentDiceNum = Math.floor(Math.random() * 6) + 1;
+                currentDicePattern = PATTERN_TYPES[currentDiceNum - 1];
+                currentTopic = diceTopics[Math.floor(Math.random() * diceTopics.length)];
+
+                graphic.textContent = currentDiceNum;
+                document.getElementById('dice-point').textContent = currentDiceNum;
+                document.getElementById('dice-pattern-name').textContent = `${currentDicePattern}複句`;
+                document.getElementById('dice-topic-name').textContent = currentTopic;
+
+                document.getElementById('dice-result').classList.remove('hidden');
+                document.getElementById('dice-input-area').classList.remove('hidden');
+            }, 600);
+        }
+
+        async function submitDiceSentence() {
+            const input = document.getElementById('user-dice-sentence').value.trim();
+            const feedback = document.getElementById('dice-feedback');
+
+            if (!input || input.length < 5) {
+                showToast('⚠️ 句子有點太短囉，請寫出一句完整的複句！', false);
+                return;
+            }
+
+            feedback.textContent = "🔍 句型大師正在審核你的造句中……";
+            feedback.className = "text-yellow-300 text-sm font-bold animate-pulse";
+
+            // If API Key is available, call Gemini API
+            if (gameState.apiKey) {
+                try {
+                    const prompt = `你是一位國小高年級國語老師。請審核學生針對主題「${currentTopic}」所寫的「${currentDicePattern}複句」造句：「${input}」。
+請用親切優美的評語判斷：1. 關聯詞使用是否正確？ 2. 是否符合 ${currentDicePattern}複句 的語意邏輯？ 3. 簡短評語(60字以內)與給予 1~5 顆星好評。`;
+
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${gameState.apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }]
+                        })
+                    });
+                    const data = await res.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "評價完成！造句非常通順！";
+
+                    playSound('correct');
+                    addScore(25);
+                    unlockBadge(currentDicePattern);
+                    feedback.className = "text-emerald-300 text-sm font-bold bg-slate-900 p-4 rounded-xl border border-emerald-500/40";
+                    feedback.innerHTML = `🤖 <strong>AI 導師點評：</strong><br>${text}`;
+                    return;
+                } catch(e) {
+                    console.log('Gemini API call error, falling back to local verification');
+                }
+            }
+
+            // Local Regex Fallback
+            const connectorMap = {
+                承接: ['先', '再', '接著', '最後', '就'],
+                假設: ['如果', '若', '即使', '假如'],
+                並列: ['也', '一方面', '一方面', '又', '邊'],
+                條件: ['只要', '不管', '不論', '就'],
+                遞進: ['不但', '而且', '不僅', '還', '甚至'],
+                轉折: ['雖然', '但是', '卻', '不過', '可是']
+            };
+
+            const keywords = connectorMap[currentDicePattern] || [];
+            const hasKeyword = keywords.some(k => input.includes(k));
+
+            if (hasKeyword) {
+                playSound('correct');
+                addScore(20);
+                unlockBadge(currentDicePattern);
+                feedback.className = "text-emerald-400 text-sm font-bold";
+                feedback.textContent = `🎉 太棒了！句子包含【${currentDicePattern}複句】關鍵關聯詞，語意順暢！+20分`;
+            } else {
+                playSound('wrong');
+                feedback.className = "text-rose-400 text-sm font-bold";
+                feedback.textContent = `💡 提醒：請記得使用「${keywords.join(' / ')}」等【${currentDicePattern}複句】關聯詞喔！`;
+            }
+        }
+
+        // ================= LEVEL 5: 💥「一句變身」句型組合 =================
+        const level5Data = [
+            {
+                s1: "小美喜歡畫畫。",
+                s2: "小美也喜歡唱歌。",
+                target: "並列",
+                templateHint: "小美既喜歡畫畫，也……",
+                sampleAnswer: "小美不但喜歡畫畫，也喜歡唱歌。"
+            },
+            {
+                s1: "今天下雨。",
+                s2: "我們還是去圖書館。",
+                target: "轉折",
+                templateHint: "雖然……，但是……",
+                sampleAnswer: "雖然今天下雨，但是我們還是去圖書館。"
+            },
+            {
+                s1: "小明每天練習。",
+                s2: "小明進步很多。",
+                target: "條件",
+                templateHint: "只要……，就能……",
+                sampleAnswer: "只要每天練習，就能進步很多。"
+            }
+        ];
+
+        let l5Index = 0;
+
+        function renderLevel5() {
+            const item = level5Data[l5Index];
+            const html = `
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div class="text-center">
+                        <span class="bg-purple-900/60 text-purple-300 text-xs font-bold px-3 py-1 rounded-full border border-purple-700/50">
+                            變身任務 0${l5Index + 1}
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-2">💥 第五關：一句變身（句型合併）</h2>
+                        <p class="text-xs text-slate-300 mt-1">將兩個獨立的單句，運用指定的關聯詞合體變身為高級複句！</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center font-bold text-slate-200">
+                            句一：${item.s1}
+                        </div>
+                        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 text-center font-bold text-slate-200">
+                            句二：${item.s2}
+                        </div>
+                    </div>
+
+                    <div class="bg-indigo-950/60 p-4 rounded-xl border border-indigo-500/40 text-center space-y-1">
+                        <div class="text-xs text-indigo-300 font-bold">🎯 指定變身目標：</div>
+                        <div class="text-lg font-black text-yellow-300">【${item.target}複句】</div>
+                        <div class="text-xs text-slate-400">關聯詞靈感提示：${item.templateHint}</div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <input type="text" id="l5-user-input" placeholder="請在此輸入變身合併後的完整句子……" 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-500">
+                        <button onclick="checkL5Combine()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-xl shadow-lg transition-all">
+                            💥 執行句型合體！
+                        </button>
+                    </div>
+
+                    <div id="l5-feedback" class="text-center font-bold text-sm min-h-[30px]"></div>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function checkL5Combine() {
+            const item = level5Data[l5Index];
+            const val = document.getElementById('l5-user-input').value.trim();
+            const feedback = document.getElementById('l5-feedback');
+
+            if (!val) {
+                showToast('⚠️ 請先輸入合併後的句子！', false);
+                return;
+            }
+
+            playSound('correct');
+            addScore(20);
+            unlockBadge(item.target);
+
+            feedback.className = "text-emerald-300 text-sm font-bold bg-slate-900 p-4 rounded-xl border border-emerald-500/30";
+            feedback.innerHTML = `🎉 變身成功！<br><span class="text-xs text-slate-300">參考示範：${item.sampleAnswer}</span>`;
+
+            setTimeout(() => {
+                l5Index = (l5Index + 1) % level5Data.length;
+                renderLevel5();
+            }, 2500);
+        }
+
+        // ================= LEVEL 6: 🏆「句型搶救王」情境終極挑戰 =================
+        const level6Data = [
+            {
+                scenario: "🌧️ 明天學校原本要辦戶外運動會，但氣象預報可能下雨。",
+                requirement: "假設複句",
+                sample: "如果明天下雨，戶外運動會就要改在室內體育館舉行。"
+            },
+            {
+                scenario: "📚 小明既喜歡沉浸在圖書館閱讀，又熱愛到球場打球。",
+                requirement: "並列複句",
+                sample: "小明不但喜歡閱讀，也喜歡打球。"
+            },
+            {
+                scenario: "😴 今天小華感到非常疲倦，但他依然坚持完成所有功課。",
+                requirement: "轉折複句",
+                sample: "雖然今天很累，但是小華仍然堅持完成了功課。"
+            },
+            {
+                scenario: "🎹 想要讓鋼琴琴藝不斷進步，每天勤奮練習是不可或缺的。",
+                requirement: "條件複句",
+                sample: "只要每天勤奮練琴，就能讓琴藝不斷進步。"
+            }
+        ];
+
+        let l6Index = 0;
+
+        function renderLevel6() {
+            const item = level6Data[l6Index];
+            const html = `
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div class="text-center">
+                        <span class="bg-yellow-900/60 text-yellow-300 text-xs font-bold px-3 py-1 rounded-full border border-yellow-700/50">
+                            終極關卡 0${l6Index + 1}
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-white mt-2">🏆 第六關：句型搶救王（情境應變）</h2>
+                        <p class="text-xs text-slate-300 mt-1">句型王國出現重大危機！請依情境卡指示，使用指定複句化解難題！</p>
+                    </div>
+
+                    <!-- Scenario Card -->
+                    <div class="bg-gradient-to-r from-indigo-950 via-slate-900 to-slate-950 p-6 rounded-2xl border-2 border-yellow-500/50 space-y-3 shadow-2xl">
+                        <div class="text-yellow-400 font-bold text-xs uppercase tracking-wider">📜 句型救援情境卡：</div>
+                        <div class="text-lg font-bold text-slate-100">${item.scenario}</div>
+                        <div class="inline-block bg-yellow-500/20 text-yellow-300 px-3 py-1 rounded-lg text-sm font-extrabold border border-yellow-500/40">
+                            👉 請使用【${item.requirement}】化解情境！
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <textarea id="l6-user-input" rows="3" placeholder="請寫出能夠化解該情境的句型……" 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-yellow-500"></textarea>
+
+                        <button onclick="submitL6Rescue()" class="w-full bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 font-black py-3 rounded-xl shadow-xl transition-all hover:brightness-110">
+                            🏆 拯救句型王國！
+                        </button>
+                    </div>
+
+                    <div id="l6-feedback" class="text-center font-bold text-sm min-h-[30px]"></div>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function submitL6Rescue() {
+            const item = level6Data[l6Index];
+            const input = document.getElementById('l6-user-input').value.trim();
+            const feedback = document.getElementById('l6-feedback');
+
+            if (!input || input.length < 5) {
+                showToast('⚠️ 請寫出完整的救援句子！', false);
+                return;
+            }
+
+            playSound('correct');
+            addScore(30);
+            unlockBadge(item.requirement.replace('複句', ''));
+
+            feedback.className = "text-yellow-300 text-sm font-bold bg-slate-900 p-4 rounded-xl border border-yellow-500/40";
+            feedback.innerHTML = `🌟 句型搶救成功！+30分！<br><span class="text-xs text-slate-300">參考佳句：${item.sample}</span>`;
+
+            setTimeout(() => {
+                l6Index = (l6Index + 1) % level6Data.length;
+                if (l6Index === 0) {
+                    renderVictorySummary();
+                } else {
+                    renderLevel6();
+                }
+            }, 2500);
+        }
+
+        function renderVictorySummary() {
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+            const html = `
+                <div class="max-w-2xl mx-auto text-center space-y-6 py-6">
+                    <div class="text-6xl animate-bounce">🏆</div>
+                    <h2 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-indigo-300">
+                        恭喜成為「六大句型大師」！
+                    </h2>
+                    <p class="text-slate-300 text-sm">
+                        你已經順利通過承接、假設、並列、條件、遞進、轉折六大句型關卡，拯救了句型王國！
+                    </p>
+
+                    <!-- Certificate Card -->
+                    <div class="bg-gradient-to-b from-amber-100 to-yellow-50 text-slate-900 p-8 rounded-2xl border-4 border-yellow-600 shadow-2xl space-y-4 text-left relative overflow-hidden">
+                        <div class="text-center font-black text-2xl tracking-widest text-amber-900 border-b-2 border-amber-800/30 pb-3">
+                            偵 探 大 師 結 業 證 書
+                        </div>
+                        <div class="space-y-2 text-sm text-slate-800 font-semibold">
+                            <p>茲證明 偵探學員 於「六大句型偵探王」遊戲中表現卓越：</p>
+                            <ul class="list-disc list-inside text-xs text-slate-700 space-y-1 pl-2">
+                                <li>總累積偵探積分：<span class="text-indigo-900 font-black text-base">${gameState.score}</span> 分</li>
+                                <li>已解鎖句型印章：六大句型全數收集完畢</li>
+                            </ul>
+                            <p class="text-xs text-slate-600 mt-4">頒發單位：句型王國偵探總部</p>
+                        </div>
+                    </div>
+
+                    <button onclick="location.reload()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-3 rounded-xl shadow-xl transition-all">
+                        🔄 再玩一次
+                    </button>
+                </div>
+            `;
+            document.getElementById('stage-viewport').innerHTML = html;
+        }
+
+        function switchLevel(lvl) {
+            gameState.currentLevel = lvl;
+            document.querySelectorAll('.stage-tab').forEach((tab, idx) => {
+                if (idx + 1 === lvl) {
+                    tab.className = "stage-tab active-tab bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all";
+                } else {
+                    tab.className = "stage-tab bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap shadow-lg flex items-center gap-2 transition-all";
+                }
+            });
+
+            if (lvl === 1) renderLevel1();
+            else if (lvl === 2) renderLevel2();
+            else if (lvl === 3) renderLevel3();
+            else if (lvl === 4) renderLevel4();
+            else if (lvl === 5) renderLevel5();
+            else if (lvl === 6) renderLevel6();
+        }
+
+        // Initialize Game
+        window.onload = function() {
+            updateApiStatus();
+            switchLevel(1);
+        };
+    </script>
+</body>
+</html>
